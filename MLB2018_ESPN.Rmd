@@ -1,0 +1,85 @@
+---
+title: "Baseball pitchers"
+author: "Josh Kim""
+date: '2018'
+output:
+  html_document: default
+  pdf_document: default
+---
+```{r  Batting dataset}
+library("rvest")
+
+######FIRST LOOP ######
+  #first batting stats  (sorted by avg)
+url <-"http://www.espn.com/mlb/stats/batting/_/qualified/false"
+mlbstat <- url %>%
+  read_html() %>%
+  html_nodes(xpath='//*[@id="my-players-table"]/div/div[1]/table') %>%
+  html_table() 
+mlbstat <- data.frame(mlbstat)   #change to data frame (not list)
+colnames(mlbstat) <- mlbstat[2,]   #set column names
+mlbstat <- mlbstat[ ! ( ( mlbstat$RK == 'Sortable Batting') | ( mlbstat$RK =='RK') ) ,]   #rid of unneccessary rows
+mlbstat <- mlbstat[,-1]  #get rid of first col
+
+  #second batting stats (expanded)
+url2 <-"http://www.espn.com/mlb/stats/batting/_/qualified/false/type/expanded"
+mlbstat2 <- url2 %>%
+  read_html() %>%
+  html_nodes(xpath='//*[@id="my-players-table"]/div/div[1]/table') %>%
+  html_table() 
+mlbstat2 <- data.frame(mlbstat2)  ; colnames(mlbstat2) <- mlbstat2[2,]  ; mlbstat2 <- mlbstat2[ ! ( ( mlbstat2$RK == 'Sortable Batting') | ( mlbstat2$RK =='RK') ) ,]   ; mlbstat2 <- mlbstat2[,-1] 
+
+  #third batting stats (sabermet)
+url3 <-"http://www.espn.com/mlb/stats/batting/_/qualified/false/type/sabermetric"
+mlbstat3 <- url3 %>%
+  read_html() %>%
+  html_nodes(xpath='//*[@id="my-players-table"]/div/div[1]/table') %>%
+  html_table() 
+mlbstat3 <- data.frame(mlbstat3)  ; colnames(mlbstat3) <- mlbstat3[2,]  ; mlbstat3 <- mlbstat3[ ! ( ( mlbstat3$RK == 'Sortable Batting') | ( mlbstat3$RK =='RK') ) ,]   ; mlbstat3 <- mlbstat3[,-1] 
+
+#combined mlbstats
+mlbstatc <- cbind(mlbstat,mlbstat2[,-c(1,2,4)],mlbstat3[,-c(1,2,3)])
+row.names(mlbstatc) <- NULL  ; mlbstatc
+
+
+
+##PILING on loop
+for(i in seq(41,521,40)){
+  url <- gsub('pages',i,"http://www.espn.com/mlb/stats/batting/_/count/pages/qualified/false")
+mlbstat <- url %>%
+  read_html() %>%
+  html_nodes(xpath='//*[@id="my-players-table"]/div/div[1]/table') %>%
+  html_table() 
+mlbstat <- data.frame(mlbstat)   #change to data frame (not list)
+colnames(mlbstat) <- mlbstat[2,]   #set column names
+mlbstat <- mlbstat[ ! ( ( mlbstat$RK == 'Sortable Batting') | ( mlbstat$RK =='RK') ) ,]   #rid of unneccessary rows
+mlbstat <- mlbstat[,-1]  #get rid of first col
+
+  #second batting stats (expanded)
+  url2 <- gsub('pages',i,"http://www.espn.com/mlb/stats/batting/_/count/pages/qualified/false/type/expanded")
+mlbstat2 <- url2 %>%
+  read_html() %>%
+  html_nodes(xpath='//*[@id="my-players-table"]/div/div[1]/table') %>%
+  html_table() 
+mlbstat2 <- data.frame(mlbstat2)  ; colnames(mlbstat2) <- mlbstat2[2,]  ; mlbstat2 <- mlbstat2[ ! ( ( mlbstat2$RK == 'Sortable Batting') | ( mlbstat2$RK =='RK') ) ,]   ; mlbstat2 <- mlbstat2[,-1] 
+
+  #third batting stats (sabermet)
+  url3 <- gsub('pages',i,"http://www.espn.com/mlb/stats/batting/_/count/pages/qualified/false/type/sabermetric")
+mlbstat3 <- url3 %>%
+  read_html() %>%
+  html_nodes(xpath='//*[@id="my-players-table"]/div/div[1]/table') %>%
+  html_table() 
+mlbstat3 <- data.frame(mlbstat3)  ; colnames(mlbstat3) <- mlbstat3[2,]  ; mlbstat3 <- mlbstat3[ ! ( ( mlbstat3$RK == 'Sortable Batting') | ( mlbstat3$RK =='RK') ) ,]   ; mlbstat3 <- mlbstat3[,-1] 
+
+combined <- cbind(mlbstat,mlbstat2[,-c(1,2,4)],mlbstat3[,-c(1,2,3)]) ; row.names(combined) <- NULL
+
+mlbstatc <- rbind(mlbstatc,combined)
+}
+row.names(mlbstatc) <- NULL
+
+#converting relevent columns to numeric
+bs<-   data.frame(cbind(mlbstatc[,1:2], sapply(mlbstatc[,3:ncol(mlbstatc)], as.numeric)))
+
+#removing others from workspace
+rm(combined, mlbstat, mlbstat2, mlbstat3, mlbstatc, i, url, url2, url3)
+```
